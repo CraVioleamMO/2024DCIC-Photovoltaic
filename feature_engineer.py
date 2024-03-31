@@ -314,7 +314,7 @@ if config.get('DiffFE', False):
     save the data
 '''
 print('Saving the data')
-if os.path.exists(config['Output']):
-    os.makedirs(config['Output'])
-dfpl.to_pandas().to_csv(config['Output'], index=False)
+if os.path.exists(config['output']):
+    os.makedirs(config['output'])
+dfpl.to_pandas().to_csv(config['output'], index=False)
 print('Finish!')

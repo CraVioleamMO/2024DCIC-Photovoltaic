@@ -1,7 +1,7 @@
 
-input: ./Inter_output/df.csv
+input: ./Inter_output/df_f1.csv
 
-output: ./Output/test_submission.csv
+output: ./Output/submission_test.csv
 
 # the split option: normal, half_day, user
 split: half_day

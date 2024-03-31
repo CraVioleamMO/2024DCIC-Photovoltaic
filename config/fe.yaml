@@ -1,7 +1,7 @@
 
 # set the input path and the Output path
 input: ./Input/
-output: ./Inter_output/test.csv
+output: ./Inter_output/df_f1.csv
 
 # the discard option
 discard:
