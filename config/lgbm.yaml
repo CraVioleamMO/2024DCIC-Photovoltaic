@@ -9,15 +9,15 @@ split: half_day
 model:
   name: lgbm
   config:
-    num_boost_round: 1000
+    num_boost_round: 20000
     params:
       objective: regression
       metric: rmse
-      boosting_type: gbdt #  gbdt
+      boosting_type: dart #  gbdt
       max_depth: -1
       verbose: -1
       min_data_in_leaf: 50
-      learning_rate:  # 0.03
+      learning_rate: 0.07 # 0.03
       subsample: 0.7
       subsample_freq: 1
       feature_fraction: 1
