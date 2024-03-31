@@ -1,0 +1,29 @@
+
+input: ./Inter_output/df.csv
+
+output: ./Output/test_submission.csv
+
+# the split option: normal, half_day, user
+split: half_day
+# set the model option
+model:
+  name: lgbm
+  config:
+    num_boost_round: 1000
+    params:
+      objective: regression
+      metric: rmse
+      boosting_type: gbdt #  gbdt
+      max_depth: -1
+      verbose: -1
+      min_data_in_leaf: 50
+      learning_rate:  # 0.03
+      subsample: 0.7
+      subsample_freq: 1
+      feature_fraction: 1
+      lambda_l1: 0.5
+      lambda_l2: 2
+      zero_as_missing: True
+      first_metric_only: True
+
+

@@ -1,0 +1,15 @@
+
+# set the input path and the Output path
+input: ./Input/
+output: ./Inter_output/test.csv
+
+# the discard option
+discard:
+  start_month: 3
+  end_month: 11
+# set the engineer option
+TimeFE: True
+WeatherFE: True
+StatFE: True
+ShiftFE: True
+DiffFE: True

@@ -6,5 +6,5 @@
 /Inter_output/*
 !/Inter_output/set inter file here
 /temp_notebook
-/output/*
-!/output/store the submission here
+/Output/*
+!/Output/store the submission here
