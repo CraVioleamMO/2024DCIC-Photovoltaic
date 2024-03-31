@@ -1,0 +1,10 @@
+/Input/*.csv
+/Input/train/*
+/Input/test/*
+!/Input/test/set test data here
+!/Input/train/set train data here
+/Inter_output/*
+!/Inter_output/set inter file here
+/temp_notebook
+/output/*
+!/output/store the submission here
