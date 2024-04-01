@@ -9,6 +9,7 @@ import os
 import warnings
 import yaml
 import json
+import argparse
 from tqdm import *
 from src.models import lgbm_train, cat_train, xgb_train
 
@@ -38,7 +39,7 @@ def cv_model(model: dict, train, test, seed=2024):
         if model['name'] == 'lgbm':
             result = lgbm_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         elif model['name'] == 'cat':
-            pass
+            result = cat_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         elif model['name'] == 'xgb':
             pass
         else:
@@ -103,14 +104,24 @@ def generate_submission(test, test_list, test_pred_list):
 
 
 if __name__ == '__main__':
+    # read the config file from command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, default='./config/lgbm.yaml')
+    args = parser.parse_args()
+
     # load the configuration file
-    with open('./config/lgbm.yaml', 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     print('The config file is')
     print(json.dumps(config, indent=4))
 
     # load the data
     df = pd.read_csv(config['input'], parse_dates=['ts'])
+
+    # weather use extra data
+    if config['extra_data']:
+        extra_df = pd.read_csv(config['extra_data_path'], parse_dates=['ts'])
+        df = df.merge(extra_df.drop(['ts'], axis=1), on=['UserID', 'year', 'month', 'day', 'hour'], how='left')
 
     if config['model']['name'] != 'cat':
         df['UserID'] = df['UserID'].astype('category').cat.codes
