@@ -1,0 +1,29 @@
+
+input: ./Inter_output/df.csv
+
+# 命名格式 submission_{feature name}_{model name}_{operation}.csv
+output: ./Output/submission_df_no_extra.csv
+
+extra_data: False
+extra_data_path: ./Input/Extra_weather.csv
+# the split option: normal, half_day, user
+split: normal
+# set the model option
+model:
+  name: cat
+  config:
+    iterations: 20000
+    early_stopping_rounds: 100
+    cat_features: [UserID]
+    params:
+      learning_rate: 0.3
+      depth: 10
+      l2_leaf_reg: 148
+      bootstrap_type: Bernoulli
+      random_seed: 2024
+      od_type: Iter,
+      od_wait: 50
+      allow_writing_files: False
+      task_type: GPU
+
+
