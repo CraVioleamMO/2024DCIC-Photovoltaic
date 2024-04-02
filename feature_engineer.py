@@ -10,6 +10,7 @@ import warnings
 import yaml
 import json
 import time
+import argparse
 import logging
 from tqdm import *
 
@@ -25,10 +26,13 @@ def timeit(func):
         return result
 
     return wrapper
-
+# get the config file from the command line
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='./config/fe.yaml', help='the path of config file')
+args = parser.parse_args()
 
 # use the config file to get the data path
-with open('./config/fe.yaml', 'r') as file:
+with open(args.config, 'r') as file:
     config = yaml.safe_load(file)
 
 # use json to show the data
@@ -311,10 +315,55 @@ if config.get('DiffFE', False):
     print('Now, the shape of data is:', dfpl.shape)
 
 '''
+    6. rolling feature
+'''
+
+
+def get_rolling_expr(columns: list, period='45m', forward=False):
+    expr_list = []
+    direction = 'forward' if forward else 'backward'
+    for col in columns:
+        expr_list.extend([
+            pl.col(col).mean().alias(f'{col}_mean_rolling_{period}' + direction),
+            pl.col(col).ewm_mean(alpha=0.9).apply(lambda x:x[-1]).alias(f'{col}_ewm_0.9_mean_rolling_{period}' +
+                                                                     direction),
+            pl.col(col).ewm_mean(alpha=0.8).apply(lambda x:x[-1]).alias(f'{col}_ewm_0.8_mean_rolling_{period}' +
+                                                                     direction),
+        ]
+        )
+    return expr_list
+
+@timeit
+def get_rolling_feature(df: pl.DataFrame, columns: list):
+    df = df.with_columns(
+        # df.rolling('ts', period='45m', group_by='UserID').agg(
+        #     get_rolling_expr(columns, period='45m', forward=False)
+        # ),
+        df.rolling('ts', period='105m', group_by='UserID').agg(
+            get_rolling_expr(columns, period='105m', forward=False)
+        ),
+        # df.rolling('ts', period='225m', group_by='UserID').agg(
+        #     get_rolling_expr(columns, period='225m', forward=False)
+        # ),
+        # df.rolling('ts', period='450m', group_by='UserID').agg(
+        #     get_rolling_expr(columns, period='450m', forward=False)
+        # ),
+        # df.rolling('ts', period='600m', group_by='UserID').agg(
+        #     get_rolling_expr(columns, period='600m', forward=False)
+        # ),
+    )
+    return df
+if config.get('RollingFE',False):
+    print('**********add rolling features**********')
+    columns = ['AirPressure', 'RelativeHumidity', 'CloudAmount', 'Temperature', 'Radiation']
+    dfpl = get_rolling_feature(dfpl, columns)
+    print('Now, the shape of data is:', dfpl.shape)
+
+'''
     save the data
 '''
 print('Saving the data')
-if os.path.exists(config['output']):
-    os.makedirs(config['output'])
+# if os.path.exists(config['output']):
+#     os.makedirs(config['output'])
 dfpl.to_pandas().to_csv(config['output'], index=False)
 print('Finish!')
