@@ -4,8 +4,8 @@ input: ./Inter_output/df.csv
 # 命名格式 submission_{feature name}_{model name}_{operation}.csv
 output: ./Output/submission_df_no_extra.csv
 
-extra_data: False
-extra_data_path: ./Input/Extra_weather.csv
+extra_data: True
+extra_data_path: ./Input/Extra_weather_data.csv
 # the split option: normal, half_day, user
 split: normal
 # set the model option

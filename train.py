@@ -15,7 +15,52 @@ from src.models import lgbm_train, cat_train, xgb_train
 
 warnings.filterwarnings('ignore')
 
+def cv_model_plus(model:dict,train,test,seed=2024):
+    # set the vec to store the result
+    cv_scores=[]
+    test_pred=np.zeros(test.shape[0])
 
+    # get data which the month=5,6,7 in train
+    train_part = train[train.month.isin([5,6,7])]
+    val_pred = np.zeros(train_part.shape[0])
+
+    # create the fold
+    kf = KFold(n_splits=5,random_state=seed,shuffle=True)
+
+    for i,(trn_index,val_index) in enumerate(kf.split(train_part)):
+        print('the %d fold'%(i+1))
+
+        # split the data
+        val_x = train_part.iloc[val_index].drop(['target','ts'],axis=1)
+        val_y = train_part.iloc[val_index]['target']
+
+        # create the index
+        index = np.ones(train.shape[0]).astype('bool')
+        index[val_index] = False
+        trn_x = train[index].drop(['target','ts'],axis=1)
+        trn_y = train[index]['target']
+
+        # train the model
+        result = {}
+        if model['name'] == 'lgbm':
+            result = lgbm_train(model['config'],trn_x,trn_y,val_x,val_y,test)
+        elif model['name'] == 'cat':
+            result = cat_train(model['config'],trn_x,trn_y,val_x,val_y,test)
+        elif model['name'] == 'xgb':
+            pass
+        else:
+            raise ValueError('The model name is not supported,the support model is [ lgbm, cat, xgb ]')
+
+        val_pred[val_index] = result['val_pred']
+        test_pred += result['test_pred']/5
+
+        # count the RMSE
+        cv_scores.append(np.sqrt(np.mean((val_pred[val_index]-val_y)**2)))
+
+    print('cv scores:',cv_scores)
+    # count the RMSE between the val_pred and the real target
+    print('cv score:',np.sqrt(np.mean((val_pred-train_part['target'])**2)))
+    return test_pred,val_pred
 def cv_model(model: dict, train, test, seed=2024):
     # set the vec to store the result
     cv_scores = []
@@ -126,6 +171,7 @@ if __name__ == '__main__':
     if config['model']['name'] != 'cat':
         df['UserID'] = df['UserID'].astype('category').cat.codes
 
+    print('The shape of data is:', df.shape)
     # split the data into train and test
     train = df[df.is_test == False].drop(['is_test'], axis=1)
     test = df[df.is_test == True].drop(['is_test'], axis=1)
@@ -155,7 +201,11 @@ if __name__ == '__main__':
     # train the model
     for i in range(len(train_list)):
         print('The %dth data' % (i + 1))
-        test_pred, val_pred = cv_model(config['model'], train_list[i], test_list[i])
+
+        if config.get('cv_plus',False):
+            test_pred, val_pred = cv_model_plus(config['model'], train_list[i], test_list[i])
+        else:
+            test_pred, val_pred = cv_model(config['model'], train_list[i], test_list[i])
         test_pred_list.append(test_pred)
         val_pred_list.append(val_pred)
 
