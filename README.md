@@ -4,6 +4,8 @@
 
 ## 1. Enviroment setup
 ```bash
+conda create -n DM python==3.8.0
+conda activate DM
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
