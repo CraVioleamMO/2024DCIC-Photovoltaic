@@ -163,6 +163,11 @@ if __name__ == '__main__':
     # load the data
     df = pd.read_csv(config['input'], parse_dates=['ts'])
 
+    # filter the data by month
+    if config.get('filter',False):
+        # ensure the filter=[5,6,7] at least
+        df = df[df.month.isin(config['filter'])]
+
     # weather use extra data
     if config['extra_data']:
         extra_df = pd.read_csv(config['extra_data_path'], parse_dates=['ts'])
