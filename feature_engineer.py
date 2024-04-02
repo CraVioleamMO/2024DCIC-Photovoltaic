@@ -47,15 +47,15 @@ print('**********load data**********')
 
 path = os.path.join(config['input'], 'train')
 
-train_basic = pd.read_csv(os.path.join(path, 'basic_information.csv'), encoding='ANSI')
-train_weather = pd.read_csv(os.path.join(path, 'weather.csv'), encoding='ANSI', parse_dates=['时间'])
-train_power = pd.read_csv(os.path.join(path, 'power.csv'), encoding='ANSI', parse_dates=['时间'])
+train_basic = pd.read_csv(os.path.join(path, 'basic_information.csv'), encoding='gbk')
+train_weather = pd.read_csv(os.path.join(path, 'weather.csv'), encoding='gbk', parse_dates=['时间'])
+train_power = pd.read_csv(os.path.join(path, 'power.csv'), encoding='gbk', parse_dates=['时间'])
 
 path = os.path.join(config['input'], 'test')
 
-test_basic = pd.read_csv(os.path.join(path, 'basic_information.csv'), encoding='ANSI')
-test_weather = pd.read_csv(os.path.join(path, 'weather.csv'), encoding='ANSI', parse_dates=['时间'])
-test_power = pd.read_csv(os.path.join(path, 'power.csv'), encoding='ANSI', parse_dates=['时间'])
+test_basic = pd.read_csv(os.path.join(path, 'basic_information.csv'), encoding='gbk')
+test_weather = pd.read_csv(os.path.join(path, 'weather.csv'), encoding='gbk', parse_dates=['时间'])
+test_power = pd.read_csv(os.path.join(path, 'power.csv'), encoding='gbk', parse_dates=['时间'])
 
 print('**********data loaded**********')
 
@@ -336,21 +336,25 @@ def get_rolling_expr(columns: list, period='45m', forward=False):
 @timeit
 def get_rolling_feature(df: pl.DataFrame, columns: list):
     df = df.with_columns(
-        # df.rolling('ts', period='45m', group_by='UserID').agg(
-        #     get_rolling_expr(columns, period='45m', forward=False)
-        # ),
+        df.rolling('ts', period='45m', group_by='UserID').agg(
+            get_rolling_expr(columns, period='45m', forward=False)
+        ),
+    ).with_columns(
         df.rolling('ts', period='105m', group_by='UserID').agg(
             get_rolling_expr(columns, period='105m', forward=False)
         ),
-        # df.rolling('ts', period='225m', group_by='UserID').agg(
-        #     get_rolling_expr(columns, period='225m', forward=False)
-        # ),
-        # df.rolling('ts', period='450m', group_by='UserID').agg(
-        #     get_rolling_expr(columns, period='450m', forward=False)
-        # ),
-        # df.rolling('ts', period='600m', group_by='UserID').agg(
-        #     get_rolling_expr(columns, period='600m', forward=False)
-        # ),
+    ).with_columns(
+        df.rolling('ts', period='225m', group_by='UserID').agg(
+            get_rolling_expr(columns, period='225m', forward=False)
+        ),
+    ).with_columns(
+        df.rolling('ts', period='450m', group_by='UserID').agg(
+            get_rolling_expr(columns, period='450m', forward=False)
+        ),
+    ).with_columns(
+        df.rolling('ts', period='600m', group_by='UserID').agg(
+            get_rolling_expr(columns, period='600m', forward=False)
+        ),
     )
     return df
 if config.get('RollingFE',False):
