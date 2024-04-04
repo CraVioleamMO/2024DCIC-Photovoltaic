@@ -15,52 +15,55 @@ from src.models import lgbm_train, cat_train, xgb_train
 
 warnings.filterwarnings('ignore')
 
-def cv_model_plus(model:dict,train,test,seed=2024):
+
+def cv_model_plus(model: dict, train, test, seed=2024):
     # set the vec to store the result
-    cv_scores=[]
-    test_pred=np.zeros(test.shape[0])
+    cv_scores = []
+    test_pred = np.zeros(test.shape[0])
 
     # get data which the month=5,6,7 in train
-    train_part = train[train.month.isin([5,6,7])]
+    train_part = train[train.month.isin([5, 6, 7])]
     val_pred = np.zeros(train_part.shape[0])
 
     # create the fold
-    kf = KFold(n_splits=5,random_state=seed,shuffle=True)
+    kf = KFold(n_splits=5, random_state=seed, shuffle=True)
 
-    for i,(trn_index,val_index) in enumerate(kf.split(train_part)):
-        print('the %d fold'%(i+1))
+    for i, (trn_index, val_index) in enumerate(kf.split(train_part)):
+        print('the %d fold' % (i + 1))
 
         # split the data
-        val_x = train_part.iloc[val_index].drop(['target','ts'],axis=1)
+        val_x = train_part.iloc[val_index].drop(['target', 'ts'], axis=1)
         val_y = train_part.iloc[val_index]['target']
 
         # create the index
         index = np.ones(train.shape[0]).astype('bool')
         index[val_index] = False
-        trn_x = train[index].drop(['target','ts'],axis=1)
+        trn_x = train[index].drop(['target', 'ts'], axis=1)
         trn_y = train[index]['target']
 
         # train the model
         result = {}
         if model['name'] == 'lgbm':
-            result = lgbm_train(model['config'],trn_x,trn_y,val_x,val_y,test)
+            result = lgbm_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         elif model['name'] == 'cat':
-            result = cat_train(model['config'],trn_x,trn_y,val_x,val_y,test)
+            result = cat_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         elif model['name'] == 'xgb':
-            pass
+            result = xgb_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         else:
             raise ValueError('The model name is not supported,the support model is [ lgbm, cat, xgb ]')
 
         val_pred[val_index] = result['val_pred']
-        test_pred += result['test_pred']/5
+        test_pred += result['test_pred'] / 5
 
         # count the RMSE
-        cv_scores.append(np.sqrt(np.mean((val_pred[val_index]-val_y)**2)))
+        cv_scores.append(np.sqrt(np.mean((val_pred[val_index] - val_y) ** 2)))
 
-    print('cv scores:',cv_scores)
+    print('cv scores:', cv_scores)
     # count the RMSE between the val_pred and the real target
-    print('cv score:',np.sqrt(np.mean((val_pred-train_part['target'])**2)))
-    return test_pred,val_pred
+    print('cv score:', np.sqrt(np.mean((val_pred - train_part['target']) ** 2)))
+    return test_pred, val_pred
+
+
 def cv_model(model: dict, train, test, seed=2024):
     # set the vec to store the result
     cv_scores = []
@@ -86,7 +89,7 @@ def cv_model(model: dict, train, test, seed=2024):
         elif model['name'] == 'cat':
             result = cat_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         elif model['name'] == 'xgb':
-            pass
+            result = xgb_train(model['config'], trn_x, trn_y, val_x, val_y, test)
         else:
             raise ValueError('The model name is not supported, the support model is [ lgbm, cat, xgb ]')
 
@@ -164,7 +167,7 @@ if __name__ == '__main__':
     df = pd.read_csv(config['input'], parse_dates=['ts'])
 
     # filter the data by month
-    if config.get('filter',False):
+    if config.get('filter', False):
         # ensure the filter=[5,6,7] at least
         df = df[df.month.isin(config['filter'])]
 
@@ -207,13 +210,28 @@ if __name__ == '__main__':
     for i in range(len(train_list)):
         print('The %dth data' % (i + 1))
 
-        if config.get('cv_plus',False):
+        if config.get('cv_plus', False):
             test_pred, val_pred = cv_model_plus(config['model'], train_list[i], test_list[i])
         else:
             test_pred, val_pred = cv_model(config['model'], train_list[i], test_list[i])
         test_pred_list.append(test_pred)
         val_pred_list.append(val_pred)
 
+    # construct the val prediction result
+    if config.get('val_output', False):
+        train['val_pred'] = np.zeros(train.shape[0])
+        result = None
+        if config['cv_plus']:
+            train_part = train[train.month.isin([5, 6, 7])]
+            for i in range(len(train_list)):
+                index = train_list[i][train_list[i].month.isin([5, 6, 7])].index
+                train_part.loc[index, 'val_pred'] = val_pred_list[i]
+            result = train_part[['UserID', 'ts', 'target', 'val_pred']]
+        else:
+            for i in range(len(train_list)):
+                train.loc[train_list[i].index, 'val_pred'] = val_pred_list[i]
+            result = train[['UserID', 'ts', 'target', 'val_pred']]
+        result.to_csv(config['val_output'], index=False)
     # generate the submission file
     submission = generate_submission(test, test_list, test_pred_list)
 
