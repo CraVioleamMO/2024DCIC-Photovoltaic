@@ -1,10 +1,10 @@
 
-input: ./Inter_output/df_f1.csv
+input: ./Inter_output/df_B_drop.csv
 
 # 命名格式 submission_{feature name}_{model name}_{operation}.csv
-output: ./Output/submission_df_f1_lgbm_cv_plus.csv
-
-extra_data: True
+output: ./Output/submission_LGBM_B_drop.csv
+val_output: ./Inter_output/val_LGBM_df_B_drop.csv
+extra_data: False
 extra_data_path: ./Input/Extra_weather_data.csv
 # the split option: normal, half_day, user
 split: user

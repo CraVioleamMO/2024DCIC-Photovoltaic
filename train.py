@@ -21,8 +21,8 @@ def cv_model_plus(model: dict, train, test, seed=2024):
     cv_scores = []
     test_pred = np.zeros(test.shape[0])
 
-    # get data which the month=5,6,7 in train
-    train_part = train[train.month.isin([5, 6, 7])]
+    # get data which the month=5,6,7 in train, but the B test' months are in [8,9,10,11,12]
+    train_part = train[train.month.isin([8,9,10,11,12])]
     val_pred = np.zeros(train_part.shape[0])
 
     # create the fold
@@ -171,6 +171,10 @@ if __name__ == '__main__':
         # ensure the filter=[5,6,7] at least
         df = df[df.month.isin(config['filter'])]
 
+    # revise the target which is less than 0 to 0
+    if config.get('non_negative', False):
+        df['target'] = df['target'].apply(lambda x: 0 if x < 0 else x)
+
     # weather use extra data
     if config['extra_data']:
         extra_df = pd.read_csv(config['extra_data_path'], parse_dates=['ts'])
@@ -222,9 +226,11 @@ if __name__ == '__main__':
         train['val_pred'] = np.zeros(train.shape[0])
         result = None
         if config['cv_plus']:
-            train_part = train[train.month.isin([5, 6, 7])]
+            # train_part = train[train.month.isin([5, 6, 7])]
+            train_part = train[train.month.isin([8,9,10,11,12])]
             for i in range(len(train_list)):
-                index = train_list[i][train_list[i].month.isin([5, 6, 7])].index
+                # index = train_list[i][train_list[i].month.isin([5, 6, 7])].index
+                index = train_list[i][train_list[i].month.isin([8,9,10,11,12])].index
                 train_part.loc[index, 'val_pred'] = val_pred_list[i]
             result = train_part[['UserID', 'ts', 'target', 'val_pred']]
         else:

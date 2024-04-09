@@ -1,0 +1,29 @@
+input: ./Inter_output/df.csv
+
+# 命名格式 submission_{feature name}_{model name}_{operation}.csv
+output: ./Output/submission_df_no_extra.csv
+
+extra_data: False
+extra_data_path: ./Input/Extra_weather_data.csv
+# the split option: normal, half_day, user
+split: normal
+# set the model option
+model:
+  name: xgb
+  config:
+    booster: gbtree
+    n_estimators: 2000
+    eta: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    silent: 0
+    objective: reg:linear
+    max_depth: 8
+    gamma: 0.0
+    seed: 2024
+    scale_pos_weight: 0.8
+    reg_lambda: 0.4
+    eval_metric: mae
+    tree_method: gpu_hist
+
+

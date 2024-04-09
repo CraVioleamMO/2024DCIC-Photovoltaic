@@ -103,8 +103,11 @@ print(train.columns)
     Discard some data in train dataset
 '''
 
-start_month, end_month = config['discard']['start_month'], config['discard']['end_month']
-train = train[(train['ts'].dt.month >= start_month) & (train['ts'].dt.month <= end_month)]
+# start_month, end_month = config['discard']['start_month'], config['discard']['end_month']
+# train = train[(train['ts'].dt.month >= start_month) & (train['ts'].dt.month <= end_month)]
+
+months = config['months']
+train = train[train['ts'].dt.month.isin(months)]
 
 '''
     Feature Engineering
@@ -362,6 +365,39 @@ if config.get('RollingFE',False):
     columns = ['AirPressure', 'RelativeHumidity', 'CloudAmount', 'Temperature', 'Radiation']
     dfpl = get_rolling_feature(dfpl, columns)
     print('Now, the shape of data is:', dfpl.shape)
+
+'''
+    7.  year shift target feature
+'''
+def get_year_shift_expr(col: str, pre_days=0) -> pl.Expr:
+    # min_cnt = 15min * cnt
+    shift_step = pre_days * 96
+    new_name = str(pre_days) + 'days_' + col
+    return pl.col(col).shift(shift_step).over('UserID').alias(new_name)
+
+def get_year_shift_feature(df:pl.DataFrame):
+    half_day_list = ['UserID', 'year', 'month', 'day', 'half_day']
+    expr_list = []
+    for gap in [x-14 for x in range(29)]:
+        expr_list.append(get_year_shift_expr('target_mean', gap + 365))
+        expr_list.append(get_year_shift_expr('target_std', gap + 365))
+        expr_list.append(get_year_shift_expr('target_max', gap + 365))
+    temp = df.select(
+        pl.col(['UserID','ts']),
+        pl.col('target').mean().over(half_day_list).alias('target_mean'),
+        pl.col('target').std().over(half_day_list).alias('target_std'),
+        pl.col('target').max().over(half_day_list).alias('target_max'),
+    ).with_columns(
+        *expr_list
+    ).drop(['target_mean','target_std','target_max'])
+
+    return df.join(temp, on=['UserID','ts'], how='left')
+
+if config.get('YearShiftFE',False):
+    print('**********add year shift feature**********')
+    dfpl = get_year_shift_feature(dfpl)
+    print('Now, the shape of data is:', dfpl.shape)
+
 
 '''
     save the data
